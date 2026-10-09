@@ -34,6 +34,7 @@ import type * as ProviderAdapter from "@t3tools/provider-core/server/ProviderAda
 import type { ProviderTextGeneration } from "@t3tools/provider-core/server/textGeneration";
 import { ProviderDriverError } from "@t3tools/provider-core/server/errors";
 import { readOpenCodeGoUsageLimits } from "./usageLimits.ts";
+import { loadOpenCode2Catalog } from "./openCode2Catalog.ts";
 import {
   checkOpenCodeProviderStatus,
   loadOpenCode2Workspace,
@@ -296,18 +297,8 @@ export const OpenCodeDriver: ProviderDriver<OpenCodeSettings, OpenCodeDriverEnv>
         ),
       });
       const loadOpenCode2Models = yield* makeOpenCode2ModelLoader(
-        openCode2Server.withConnection((connection) =>
-          connection.client.model.list({ location: { directory: host.paths.cwd } }).pipe(
-            Effect.map((models) => models.data),
-            Effect.mapError(
-              (cause) =>
-                new OpenCodeRuntime.OpenCodeRuntimeError({
-                  operation: "model.list",
-                  detail: "The OpenCode server could not list its models.",
-                  cause,
-                }),
-            ),
-          ),
+        openCode2Server.withConnection(({ client }) =>
+          loadOpenCode2Catalog(client, host.paths.cwd),
         ),
       );
       // A 2.x server lists skills and commands per directory, so one server
